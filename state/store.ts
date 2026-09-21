@@ -7,6 +7,16 @@ import { performFamilyAction, type FamilyActionType } from '../engine/familyActi
 import { applyForJob, workHard, quitJob, retireFromJob } from '../engine/career';
 import { studyAction, skipAction, applyToUniversity } from '../engine/education';
 import { buyAsset, sellAsset } from '../engine/assets';
+import {
+  browseDatingApp,
+  startDating,
+  passOnProspect,
+  breakUp,
+  proposeMarriage,
+  divorce,
+  cheatOnPartner,
+  haveChild,
+} from '../engine/relationships';
 import { appendFeedText } from '../engine/feed';
 import { Rng } from '../engine/rng';
 import { saveGame, loadGame, clearSave } from './persistence';
@@ -36,6 +46,15 @@ interface AppStore {
 
   buyAsset: (type: Asset['type'], name: string, value: number, upkeepPerYear?: number) => void;
   sellAsset: (assetId: string) => void;
+
+  browseDatingApp: () => void;
+  startDating: () => void;
+  passOnProspect: () => void;
+  breakUp: () => void;
+  proposeMarriage: () => void;
+  divorce: () => void;
+  cheatOnPartner: () => void;
+  haveChild: () => void;
 
   goToCreate: () => void;
   goToTitle: () => void;
@@ -167,6 +186,78 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { game } = get();
     if (!game || !game.isAlive) return;
     const result = sellAsset(game, assetId);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  browseDatingApp: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = browseDatingApp(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  startDating: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = startDating(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  passOnProspect: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = passOnProspect(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  breakUp: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = breakUp(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  proposeMarriage: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = proposeMarriage(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  divorce: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = divorce(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  cheatOnPartner: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = cheatOnPartner(game);
+    const next = appendFeedText(result.state, result.feedText);
+    set({ game: next });
+    void saveGame(next);
+  },
+
+  haveChild: () => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const result = haveChild(game);
     const next = appendFeedText(result.state, result.feedText);
     set({ game: next });
     void saveGame(next);

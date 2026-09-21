@@ -8,6 +8,7 @@ import {
   spendTimeWithFamily,
   type FamilyActionResult,
 } from './family';
+import { getAllPeople, applyPeopleUpdate } from './relationships';
 
 export type FamilyActionType = 'spendTime' | 'gift' | 'argue' | 'askForMoney';
 
@@ -26,16 +27,17 @@ function applyResult(state: GameState, rng: Rng, result: FamilyActionResult): Ga
     kind: 'narration' as const,
   };
 
+  const withPeople = applyPeopleUpdate(state, result.family);
+
   return {
-    ...state,
+    ...withPeople,
     rngState: rng.state,
     player: { ...state.player, stats, money },
-    family: result.family,
     feed: [...state.feed, feedEntry],
   };
 }
 
-/** A once-off action the player can take with a family member outside the yearly event roll. */
+/** A once-off action the player can take with anyone in their life (family, partner, or child) outside the yearly event roll. */
 export function performFamilyAction(
   state: GameState,
   type: FamilyActionType,
@@ -43,16 +45,17 @@ export function performFamilyAction(
   amount?: number,
 ): GameState {
   const rng = new Rng(state.rngState);
+  const people = getAllPeople(state);
 
   switch (type) {
     case 'spendTime':
-      return applyResult(state, rng, spendTimeWithFamily(rng, state.family, memberId, state.player.firstName));
+      return applyResult(state, rng, spendTimeWithFamily(rng, people, memberId, state.player.firstName));
     case 'gift':
-      return applyResult(state, rng, giveGiftToFamily(rng, state.family, memberId, amount ?? 20));
+      return applyResult(state, rng, giveGiftToFamily(rng, people, memberId, amount ?? 20));
     case 'argue':
-      return applyResult(state, rng, argueWithFamily(rng, state.family, memberId));
+      return applyResult(state, rng, argueWithFamily(rng, people, memberId));
     case 'askForMoney':
-      return applyResult(state, rng, askFamilyForMoney(rng, state.family, memberId));
+      return applyResult(state, rng, askFamilyForMoney(rng, people, memberId));
     default:
       return state;
   }

@@ -5,6 +5,7 @@ export * from './character';
 export * from './death';
 export * from './family';
 export * from './familyActions';
+export * from './relationships';
 export * from './events';
 export * from './effects';
 export * from './feed';

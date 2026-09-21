@@ -6,7 +6,7 @@ React Native, Expo, and TypeScript. All names, UI, and art are original.
 
 ## Status
 
-Phase 3 of 6 complete:
+Phase 4 of 6 complete:
 
 - **Phase 1** — project setup, character creation, the main life feed, the
   Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and a
@@ -25,10 +25,16 @@ Phase 3 of 6 complete:
   progressive tax, cost of living, debt interest, asset upkeep, and a small
   shop for property/cars/stocks/crypto with random yearly investment
   returns). All of it lives behind the Occupation and Assets tabs.
+- **Phase 4** — romance and family beyond birth: a dating app (browse a
+  prospect, start dating or pass), Spend Time/Gift/Argue/Ask for Money now
+  work on your partner and kids too, propose/marry (odds scale with
+  relationship), divorce (splits money), cheat (50/50 chance of getting
+  caught and dumped), and having kids — full characters with their own
+  stats who age and can die right alongside the rest of the family. It's
+  all in the Relationships tab, above the existing Family section.
 
-Relationships beyond family (dating/marriage/kids), health activities,
-crime, and achievements land in later phases — see the project's task list
-for the roadmap.
+Health activities, crime, and achievements land in Phases 5 and 6 — see the
+project's task list for the roadmap.
 
 ## Requirements
 
@@ -103,9 +109,9 @@ npm test
             screen).
 /ui
   /screens    Title, Character Create, Main Feed, Occupation (school/job
-              board), Assets (bank + shop), Relationships (family), Life
-              Summary (Activities and Achievements/Settings screens land in
-              later phases).
+              board), Assets (bank + shop), Relationships (dating/partner/
+              kids/family), Life Summary (Activities and
+              Achievements/Settings screens land in later phases).
   /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed, EventModal.
   /theme      Light/dark color palettes and the useTheme() hook.
 __tests__   Jest tests for the engine.
@@ -221,3 +227,12 @@ style as events and jobs.
 - `engine/assets.ts` — buying/selling property, cars, stocks, and crypto,
   plus each asset's yearly value change (stocks/crypto swing widely;
   property appreciates slowly; cars depreciate).
+- `engine/relationships.ts` — the dating app (roll a prospect onto
+  `state.datingProspect`, start dating or pass), marriage/divorce (proposal
+  odds scale with relationship), cheating (50/50 caught-or-not), having
+  kids, and `getAllPeople`/`applyPeopleUpdate`, which let the family actions
+  in `familyActions.ts` operate on family, partner, and children through
+  one shared "person" list instead of three separate code paths. Partner
+  and children age and can die exactly like blood family (see
+  `engine/ageUp.ts`, which ages that household alongside `state.family`
+  each year and clears the `married`/`dating` flags if a partner dies).

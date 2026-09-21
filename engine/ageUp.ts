@@ -158,10 +158,22 @@ export function ageUp(state: GameState): GameState {
     feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, text, 'system'));
   }
 
+  const householdBefore = [...(state.partner ? [state.partner] : []), ...state.children];
+  const { family: agedHousehold, deathFeedTexts: householdDeathTexts } = ageFamily(rng, householdBefore);
+  for (const text of householdDeathTexts) {
+    feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, text, 'system'));
+  }
+  const nextPartner = state.partner ? agedHousehold.find((m) => m.id === state.partner!.id) : undefined;
+  const nextChildren = agedHousehold.filter((m) => m.role === 'child');
+  const partnerJustDied = !!(state.partner && nextPartner && !nextPartner.alive);
+
   let working: GameState = {
     ...state,
     player: { ...state.player, age: nextAge, stats: newStats },
     family: agedFamily,
+    partner: nextPartner,
+    children: nextChildren,
+    flags: partnerJustDied ? { ...state.flags, married: false, dating: false, widowed: true } : state.flags,
   };
 
   const educationResult = applyYearlyEducationUpdate(working, rng);

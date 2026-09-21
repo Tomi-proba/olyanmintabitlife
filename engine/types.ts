@@ -198,6 +198,8 @@ export interface GameState {
   isAlive: boolean;
   deathCause?: string;
   pendingEvent?: GameEvent;
+  /** A prospective partner the player is currently viewing on the dating app, not yet committed to. */
+  datingProspect?: FamilyMember;
 }
 
 export interface LifeSummary {
