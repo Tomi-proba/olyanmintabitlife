@@ -39,6 +39,27 @@ npm run ios
 npm run android
 ```
 
+## Deploying the web build to Vercel
+
+The app is also a static web app (via `react-native-web`), so it can be
+deployed to Vercel as-is — no server/API routes needed.
+
+1. Push this repo to GitHub (already done if you're reading this from the
+   remote).
+2. In Vercel, "Add New Project" → import this repository.
+3. Vercel picks up the included `vercel.json`, which sets:
+   - Build command: `npx expo export --platform web`
+   - Output directory: `dist`
+   - `framework: null` (so Vercel doesn't try to auto-detect Next.js/etc.)
+4. Deploy. No environment variables are required for Phase 1.
+
+To reproduce the exact same build locally before pushing:
+
+```bash
+npx expo export --platform web
+npx serve dist   # or any static file server, to preview the output
+```
+
 ## Tests
 
 The game engine (`/engine`) is pure TypeScript with no UI imports, so it's
