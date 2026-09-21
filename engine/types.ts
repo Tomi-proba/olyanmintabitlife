@@ -200,6 +200,10 @@ export interface GameState {
   pendingEvent?: GameEvent;
   /** A prospective partner the player is currently viewing on the dating app, not yet committed to. */
   datingProspect?: FamilyMember;
+  /** Activity ids already used this year (some activities are once-per-year); cleared at the start of ageUp. */
+  activitiesUsedThisYear: string[];
+  /** Years remaining behind bars; the player is released once this hits 0. */
+  prisonYearsLeft?: number;
 }
 
 export interface LifeSummary {

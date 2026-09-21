@@ -9,6 +9,7 @@ import { EventModal } from '../components/EventModal';
 import { RelationshipsScreen } from './RelationshipsScreen';
 import { OccupationScreen } from './OccupationScreen';
 import { AssetsScreen } from './AssetsScreen';
+import { ActivitiesScreen } from './ActivitiesScreen';
 import { useAppStore } from '../../state/store';
 
 type SheetId = 'occupation' | 'assets' | 'relationships' | 'activities';
@@ -89,11 +90,7 @@ export function MainFeedScreen() {
           {openSheet === 'relationships' && <RelationshipsScreen />}
           {openSheet === 'occupation' && <OccupationScreen />}
           {openSheet === 'assets' && <AssetsScreen />}
-          {openSheet === 'activities' && (
-            <View style={styles.comingSoon}>
-              <Text style={[styles.comingSoonText, { color: colors.textMuted }]}>Coming in a future phase.</Text>
-            </View>
-          )}
+          {openSheet === 'activities' && <ActivitiesScreen />}
         </SafeAreaView>
       </Modal>
 

@@ -6,7 +6,7 @@ React Native, Expo, and TypeScript. All names, UI, and art are original.
 
 ## Status
 
-Phase 4 of 6 complete:
+Phase 5 of 6 complete:
 
 - **Phase 1** — project setup, character creation, the main life feed, the
   Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and a
@@ -32,8 +32,15 @@ Phase 4 of 6 complete:
   caught and dumped), and having kids — full characters with their own
   stats who age and can die right alongside the rest of the family. It's
   all in the Relationships tab, above the existing Family section.
+- **Phase 5** — the Activities tab: Health (Doctor, Gym, Diet Plan,
+  Meditate), Lifestyle (Vacation, Volunteer, Shopping), a Casino (gamble a
+  chosen amount), and Crime (Petty Theft, Robbery, Deal Drugs — each rolls a
+  catch chance modified by Smarts; getting caught means a fine or a prison
+  sentence, and prison fires you from your job and locks out most
+  activities until you're released). Most activities are once-per-year;
+  the Occupation and Assets screens now also reflect being in prison.
 
-Health activities, crime, and achievements land in Phases 5 and 6 — see the
+Achievements, 150+ total events, and final polish land in Phase 6 — see the
 project's task list for the roadmap.
 
 ## Requirements
@@ -110,8 +117,8 @@ npm test
 /ui
   /screens    Title, Character Create, Main Feed, Occupation (school/job
               board), Assets (bank + shop), Relationships (dating/partner/
-              kids/family), Life Summary (Activities and
-              Achievements/Settings screens land in later phases).
+              kids/family), Activities (health/lifestyle/casino/crime), Life
+              Summary (Achievements/Settings screens land in Phase 6).
   /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed, EventModal.
   /theme      Light/dark color palettes and the useTheme() hook.
 __tests__   Jest tests for the engine.
@@ -236,3 +243,16 @@ style as events and jobs.
   and children age and can die exactly like blood family (see
   `engine/ageUp.ts`, which ages that household alongside `state.family`
   each year and clears the `married`/`dating` flags if a partner dies).
+- `engine/health.ts` — Doctor (costs money, improves health, a small chance
+  of diagnosing a chronic condition that shaves a little extra health off
+  every year after), Gym, Diet Plan, and Meditate (all free).
+- `engine/crime.ts` — a shared `attemptCrime` helper behind Petty Theft,
+  Robbery, and Deal Drugs: a catch chance (reduced by high Smarts) that,
+  if it fires, either fines the player or sends them to prison (clearing
+  their job and adding to `state.prisonYearsLeft`); otherwise a cash payout.
+  Also `gamble`, a simple 45/55 double-or-nothing on a chosen amount.
+- `engine/lifestyle.ts` — Vacation, Volunteer, and Shopping.
+- `engine/ageUp.ts` also resets `state.activitiesUsedThisYear` at the start
+  of every year (the store enforces the once-per-year limit on Activities
+  screen actions) and, while `prisonYearsLeft > 0`, decrements it, docks
+  happiness, and releases the player at 0.

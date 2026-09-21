@@ -31,5 +31,6 @@ export function newGame(options: CharacterCreateOptions = {}, seed: number = cre
     ],
     flags: {},
     isAlive: true,
+    activitiesUsedThisYear: [],
   };
 }

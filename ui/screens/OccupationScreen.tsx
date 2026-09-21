@@ -42,6 +42,21 @@ export function OccupationScreen() {
     education.stage !== 'university';
 
   const availableJobs = listAvailableJobs(game);
+  const inPrison = !!game.prisonYearsLeft && game.prisonYearsLeft > 0;
+
+  if (inPrison) {
+    return (
+      <ScrollView contentContainerStyle={styles.content}>
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Behind Bars</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            You can't work or study while serving your sentence. {game.prisonYearsLeft} year
+            {game.prisonYearsLeft === 1 ? '' : 's'} left.
+          </Text>
+        </Card>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>

@@ -128,7 +128,10 @@ export function ageUp(state: GameState): GameState {
   const nextAge = state.player.age + 1;
   const feed: FeedEntry[] = [];
 
-  const newStats = ageStatDrift(rng, nextAge, state.player.stats);
+  let newStats = ageStatDrift(rng, nextAge, state.player.stats);
+  if (state.flags.chronicCondition) {
+    newStats = { ...newStats, health: clampStat(newStats.health - rng.int(1, 4)) };
+  }
 
   feed.push(
     makeFeedEntry(
@@ -174,7 +177,20 @@ export function ageUp(state: GameState): GameState {
     partner: nextPartner,
     children: nextChildren,
     flags: partnerJustDied ? { ...state.flags, married: false, dating: false, widowed: true } : state.flags,
+    activitiesUsedThisYear: [],
   };
+
+  if (working.prisonYearsLeft && working.prisonYearsLeft > 0) {
+    const happiness = clampStat(working.player.stats.happiness - rng.int(3, 8));
+    const prisonYearsLeft = working.prisonYearsLeft - 1;
+    working = { ...working, player: { ...working.player, stats: { ...working.player.stats, happiness } }, prisonYearsLeft };
+    if (prisonYearsLeft <= 0) {
+      working = { ...working, prisonYearsLeft: undefined };
+      feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, `${working.player.firstName} was released from prison.`, 'system'));
+    } else {
+      feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, `${working.player.firstName} spent the year in prison.`, 'system'));
+    }
+  }
 
   const educationResult = applyYearlyEducationUpdate(working, rng);
   working = educationResult.state;

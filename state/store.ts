@@ -17,11 +17,20 @@ import {
   cheatOnPartner,
   haveChild,
 } from '../engine/relationships';
+import { visitDoctor, goToGym, followDietPlan, meditate } from '../engine/health';
+import { pettyTheft, robbery, dealDrugs, gamble } from '../engine/crime';
+import { goOnVacation, volunteer, goShopping } from '../engine/lifestyle';
 import { appendFeedText } from '../engine/feed';
 import { Rng } from '../engine/rng';
 import { saveGame, loadGame, clearSave } from './persistence';
 
 export type Screen = 'loading' | 'title' | 'create' | 'playing' | 'summary';
+
+/** An engine action's result shape: { state, feedText }, shared by career/education/assets/relationships/health/crime/lifestyle. */
+interface ActionOutcome {
+  state: GameState;
+  feedText: string;
+}
 
 interface AppStore {
   screen: Screen;
@@ -56,217 +65,156 @@ interface AppStore {
   cheatOnPartner: () => void;
   haveChild: () => void;
 
+  visitDoctor: () => void;
+  goToGym: () => void;
+  followDietPlan: () => void;
+  meditate: () => void;
+  goOnVacation: () => void;
+  volunteer: () => void;
+  goShopping: () => void;
+  pettyTheft: () => void;
+  robbery: () => void;
+  dealDrugs: () => void;
+  gamble: (amount: number) => void;
+
   goToCreate: () => void;
   goToTitle: () => void;
 }
 
-export const useAppStore = create<AppStore>((set, get) => ({
-  screen: 'loading',
-  game: null,
-  hasSave: false,
-
-  hydrate: async () => {
-    const saved = await loadGame();
-    if (saved) {
-      set({ game: saved, hasSave: true, screen: 'title' });
-    } else {
-      set({ hasSave: false, screen: 'title' });
-    }
-  },
-
-  startNewLife: (options: CharacterCreateOptions) => {
-    const game = newGame(options);
-    set({ game, screen: 'playing', hasSave: true });
-    void saveGame(game);
-  },
-
-  continueGame: () => {
-    const { game } = get();
-    if (game) {
-      set({ screen: game.isAlive ? 'playing' : 'summary' });
-    }
-  },
-
-  ageUpYear: () => {
-    const { game } = get();
-    if (!game || !game.isAlive || game.pendingEvent) return;
-    const next = ageUp(game);
-    set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
-    void saveGame(next);
-  },
-
-  chooseEventOption: (choiceId: string) => {
-    const { game } = get();
-    if (!game || !game.pendingEvent) return;
-    const next = resolveEventChoice(game, choiceId);
-    set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
-    void saveGame(next);
-  },
-
-  doFamilyAction: (type: FamilyActionType, memberId: string, amount?: number) => {
+export const useAppStore = create<AppStore>((set, get) => {
+  /** Runs an engine action that returns {state, feedText}, appends the feed entry, saves. */
+  function runAction(action: (game: GameState) => ActionOutcome) {
     const { game } = get();
     if (!game || !game.isAlive) return;
-    const next = performFamilyAction(game, type, memberId, amount);
-    set({ game: next });
-    void saveGame(next);
-  },
-
-  applyForJob: (jobId: string) => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = applyForJob(game, jobId);
+    const result = action(game);
     const next = appendFeedText(result.state, result.feedText);
     set({ game: next });
     void saveGame(next);
-  },
+  }
 
-  workHard: () => {
+  /** Same as runAction, but the activity may only be used once per year (see GameState.activitiesUsedThisYear). */
+  function runOncePerYearActivity(activityId: string, action: (game: GameState) => ActionOutcome) {
     const { game } = get();
     if (!game || !game.isAlive) return;
-    const result = workHard(game);
-    const next = appendFeedText(result.state, result.feedText);
+    if (game.activitiesUsedThisYear.includes(activityId)) return;
+    const result = action(game);
+    const withFeed = appendFeedText(result.state, result.feedText);
+    const next = { ...withFeed, activitiesUsedThisYear: [...withFeed.activitiesUsedThisYear, activityId] };
     set({ game: next });
     void saveGame(next);
-  },
+  }
 
-  quitJob: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = quitJob(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+  return {
+    screen: 'loading',
+    game: null,
+    hasSave: false,
 
-  retireFromJob: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = retireFromJob(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    hydrate: async () => {
+      const saved = await loadGame();
+      if (saved) {
+        set({ game: saved, hasSave: true, screen: 'title' });
+      } else {
+        set({ hasSave: false, screen: 'title' });
+      }
+    },
 
-  study: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const next = studyAction(game);
-    set({ game: next });
-    void saveGame(next);
-  },
+    startNewLife: (options: CharacterCreateOptions) => {
+      const game = newGame(options);
+      set({ game, screen: 'playing', hasSave: true });
+      void saveGame(game);
+    },
 
-  skipSchool: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const next = skipAction(game);
-    set({ game: next });
-    void saveGame(next);
-  },
+    continueGame: () => {
+      const { game } = get();
+      if (game) {
+        set({ screen: game.isAlive ? 'playing' : 'summary' });
+      }
+    },
 
-  enrollInUniversity: (majorId: string) => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = applyToUniversity(game, majorId);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    ageUpYear: () => {
+      const { game } = get();
+      if (!game || !game.isAlive || game.pendingEvent) return;
+      const next = ageUp(game);
+      set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
+      void saveGame(next);
+    },
 
-  buyAsset: (type: Asset['type'], name: string, value: number, upkeepPerYear = 0) => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const rng = new Rng(game.rngState);
-    const result = buyAsset(game, rng, type, name, value, upkeepPerYear);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    chooseEventOption: (choiceId: string) => {
+      const { game } = get();
+      if (!game || !game.pendingEvent) return;
+      const next = resolveEventChoice(game, choiceId);
+      set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
+      void saveGame(next);
+    },
 
-  sellAsset: (assetId: string) => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = sellAsset(game, assetId);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    doFamilyAction: (type: FamilyActionType, memberId: string, amount?: number) => {
+      const { game } = get();
+      if (!game || !game.isAlive) return;
+      const next = performFamilyAction(game, type, memberId, amount);
+      set({ game: next });
+      void saveGame(next);
+    },
 
-  browseDatingApp: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = browseDatingApp(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    applyForJob: (jobId: string) => runAction((game) => applyForJob(game, jobId)),
+    workHard: () => runAction((game) => workHard(game)),
+    quitJob: () => runAction((game) => quitJob(game)),
+    retireFromJob: () => runAction((game) => retireFromJob(game)),
 
-  startDating: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = startDating(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    study: () => {
+      const { game } = get();
+      if (!game || !game.isAlive) return;
+      const next = studyAction(game);
+      set({ game: next });
+      void saveGame(next);
+    },
 
-  passOnProspect: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = passOnProspect(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    skipSchool: () => {
+      const { game } = get();
+      if (!game || !game.isAlive) return;
+      const next = skipAction(game);
+      set({ game: next });
+      void saveGame(next);
+    },
 
-  breakUp: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = breakUp(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    enrollInUniversity: (majorId: string) => runAction((game) => applyToUniversity(game, majorId)),
 
-  proposeMarriage: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = proposeMarriage(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    buyAsset: (type: Asset['type'], name: string, value: number, upkeepPerYear = 0) => {
+      const { game } = get();
+      if (!game || !game.isAlive) return;
+      const rng = new Rng(game.rngState);
+      const result = buyAsset(game, rng, type, name, value, upkeepPerYear);
+      const next = appendFeedText(result.state, result.feedText);
+      set({ game: next });
+      void saveGame(next);
+    },
+    sellAsset: (assetId: string) => runAction((game) => sellAsset(game, assetId)),
 
-  divorce: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = divorce(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    browseDatingApp: () => runAction((game) => browseDatingApp(game)),
+    startDating: () => runAction((game) => startDating(game)),
+    passOnProspect: () => runAction((game) => passOnProspect(game)),
+    breakUp: () => runAction((game) => breakUp(game)),
+    proposeMarriage: () => runAction((game) => proposeMarriage(game)),
+    divorce: () => runAction((game) => divorce(game)),
+    cheatOnPartner: () => runAction((game) => cheatOnPartner(game)),
+    haveChild: () => runAction((game) => haveChild(game)),
 
-  cheatOnPartner: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = cheatOnPartner(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    visitDoctor: () => runOncePerYearActivity('doctor', (game) => visitDoctor(game)),
+    goToGym: () => runOncePerYearActivity('gym', (game) => goToGym(game)),
+    followDietPlan: () => runOncePerYearActivity('diet', (game) => followDietPlan(game)),
+    meditate: () => runOncePerYearActivity('meditate', (game) => meditate(game)),
+    goOnVacation: () => runOncePerYearActivity('vacation', (game) => goOnVacation(game)),
+    volunteer: () => runOncePerYearActivity('volunteer', (game) => volunteer(game)),
+    goShopping: () => runOncePerYearActivity('shopping', (game) => goShopping(game)),
+    pettyTheft: () => runOncePerYearActivity('pettyTheft', (game) => pettyTheft(game)),
+    robbery: () => runOncePerYearActivity('robbery', (game) => robbery(game)),
+    dealDrugs: () => runOncePerYearActivity('dealDrugs', (game) => dealDrugs(game)),
+    gamble: (amount: number) => runOncePerYearActivity('gamble', (game) => gamble(game, amount)),
 
-  haveChild: () => {
-    const { game } = get();
-    if (!game || !game.isAlive) return;
-    const result = haveChild(game);
-    const next = appendFeedText(result.state, result.feedText);
-    set({ game: next });
-    void saveGame(next);
-  },
+    goToCreate: () => set({ screen: 'create' }),
 
-  goToCreate: () => set({ screen: 'create' }),
-
-  goToTitle: () => {
-    void clearSave();
-    set({ game: null, hasSave: false, screen: 'title' });
-  },
-}));
+    goToTitle: () => {
+      void clearSave();
+      set({ game: null, hasSave: false, screen: 'title' });
+    },
+  };
+});
