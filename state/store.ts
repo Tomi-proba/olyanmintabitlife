@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { GameState } from '../engine/types';
 import type { CharacterCreateOptions } from '../engine/character';
 import { newGame } from '../engine/newGame';
-import { ageUp } from '../engine/ageUp';
+import { ageUp, resolveEventChoice } from '../engine/ageUp';
+import { performFamilyAction, type FamilyActionType } from '../engine/familyActions';
 import { saveGame, loadGame, clearSave } from './persistence';
 
 export type Screen = 'loading' | 'title' | 'create' | 'playing' | 'summary';
@@ -16,6 +17,8 @@ interface AppStore {
   startNewLife: (options: CharacterCreateOptions) => void;
   continueGame: () => void;
   ageUpYear: () => void;
+  chooseEventOption: (choiceId: string) => void;
+  doFamilyAction: (type: FamilyActionType, memberId: string, amount?: number) => void;
   goToCreate: () => void;
   goToTitle: () => void;
 }
@@ -49,9 +52,25 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   ageUpYear: () => {
     const { game } = get();
-    if (!game || !game.isAlive) return;
+    if (!game || !game.isAlive || game.pendingEvent) return;
     const next = ageUp(game);
     set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
+    void saveGame(next);
+  },
+
+  chooseEventOption: (choiceId: string) => {
+    const { game } = get();
+    if (!game || !game.pendingEvent) return;
+    const next = resolveEventChoice(game, choiceId);
+    set({ game: next, screen: next.isAlive ? 'playing' : 'summary' });
+    void saveGame(next);
+  },
+
+  doFamilyAction: (type: FamilyActionType, memberId: string, amount?: number) => {
+    const { game } = get();
+    if (!game || !game.isAlive) return;
+    const next = performFamilyAction(game, type, memberId, amount);
+    set({ game: next });
     void saveGame(next);
   },
 

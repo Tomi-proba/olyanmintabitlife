@@ -6,11 +6,22 @@ React Native, Expo, and TypeScript. All names, UI, and art are original.
 
 ## Status
 
-Phase 1 of 6 complete: project setup, character creation, the main life
-feed, the Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and
-a life-summary screen, and autosave/continue via AsyncStorage. Family,
-schools, careers, relationships, health, crime, and the full random-event
-system land in later phases — see the project's task list for the roadmap.
+Phase 2 of 6 complete:
+
+- **Phase 1** — project setup, character creation, the main life feed, the
+  Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and a
+  life-summary screen, autosave/continue via AsyncStorage.
+- **Phase 2** — the data-driven random event engine (55 events at launch)
+  and the family system: randomly generated mother, father, and 0-3
+  siblings, each with their own stats and a relationship meter. Family
+  members age and can die of natural causes just like the player. From the
+  Relationships tab you can Spend Time, give a Gift, Argue, or Ask for
+  Money. Events can present a 2-4 choice decision modal, or auto-resolve as
+  pure narration.
+
+Schools, careers, money, relationships beyond family (dating/marriage/kids),
+health, crime, and achievements land in later phases — see the project's
+task list for the roadmap.
 
 ## Requirements
 
@@ -73,28 +84,63 @@ npm test
 
 ```
 /engine     Pure TS game logic: types, seedable RNG, character creation,
-            ageUp (the yearly tick), death rolls, life summary. No UI
+            ageUp (the yearly tick), death rolls, life summary, the family
+            system, the random-event engine, and effect application. No UI
             imports — safe to unit test in isolation.
-/data       Game content as data, not code: names, countries. Events, jobs,
-            schools, and achievements data files are added in later phases.
+/data       Game content as data, not code: names, countries, events (55 at
+            launch). Jobs, schools, and achievements data files are added
+            in later phases.
 /state      Zustand store (screen routing + current game) and AsyncStorage
             save/load (autosave after every year, "Continue" on the title
             screen).
 /ui
-  /screens    Title, Character Create, Main Feed, Life Summary (more are
-              added in later phases: Occupation, Assets, Relationships,
-              Activities, Achievements, Settings).
-  /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed.
+  /screens    Title, Character Create, Main Feed, Relationships (family),
+              Life Summary (more are added in later phases: Occupation,
+              Assets, Activities, Achievements, Settings).
+  /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed, EventModal.
   /theme      Light/dark color palettes and the useTheme() hook.
 __tests__   Jest tests for the engine.
 ```
 
 ## Adding new random events
 
-*(The event engine ships in Phase 2. Once `/data/events.ts` exists, new
-events are added there as plain data objects — no engine code changes
-needed. This section will be filled in with the exact schema and examples
-at that point.)*
+Events live in `/data/events.ts` as plain `EventDefinition` objects — no
+engine code changes needed. Example:
+
+```ts
+{
+  id: 'family_parent_praise',       // must be unique across all events
+  category: 'family',               // freeform grouping label
+  probability: 0.22,                 // 0-1 chance this event fires once eligible
+  weight: 1,                         // relative odds vs other events that fired the same year
+  text: '{subject} told you how proud they are of you.',
+  condition: {
+    minAge: 4,
+    maxAge: 100,
+    // genders: ['female'],          // optional: restrict by player gender
+    // requiredFlags: { hasPet: true },   // optional: state.flags must match
+    requiresSubject: 'parent',       // optional: 'mother' | 'father' | 'parent' | 'sibling' | 'any-family'
+  },
+  choices: [
+    // 1 choice = the event auto-resolves as narration (no popup).
+    // 2-4 choices = a decision modal is shown to the player.
+    { id: 'ok', label: 'Smile', effects: { happiness: 5, relationship: 4 } },
+  ],
+}
+```
+
+Template tokens available in `text` and in a choice's `label`/`resultText`:
+`{name}` (the player's first name), `{subject}` (e.g. "your mother Elena",
+only when `requiresSubject` is set), `{subjectName}` (just their first
+name). A choice's `effects` can set any of `happiness`, `health`, `smarts`,
+`looks`, `money`, `karma` (all deltas), `relationship` (applied to the
+event's subject, if any), and `flags` (merged into `state.flags`, useful
+for gating later events or unlocking achievements).
+
+Every event in the pool is checked with its own `probability` each year it's
+eligible; if more than one "fires" the same year, `weight` breaks the tie
+and one event is shown. See `engine/events.ts` for the selection logic and
+`__tests__/events.test.ts` for the invariants events are expected to hold.
 
 ## Adding new jobs
 
@@ -116,3 +162,16 @@ point.)*
   makes it easy to test and easy for the Zustand store to reason about.
 - `engine/death.ts` — yearly death probability (rises with age and falls
   with health) and cause-of-death selection.
+- `engine/family.ts` — generates a starting mother, father, and siblings;
+  ages family members and rolls their natural death each year (reusing
+  `engine/death.ts`); and the four family actions (spend time, gift, argue,
+  ask for money).
+- `engine/events.ts` — matches `data/events.ts` definitions against the
+  current age/gender/flags/family, picks a subject family member when an
+  event needs one, and fills in the event's text templates.
+- `engine/effects.ts` — applies an event choice's effects (stats, money,
+  karma, relationship-to-subject, flags) to a `GameState`.
+- `engine/ageUp.ts` — the yearly tick. `ageUp(state) => newState` is pure
+  and never mutates its input. If the year's event needs a player decision,
+  the year is left unfinished (age/stats/family already advanced, but no
+  death roll yet) until `resolveEventChoice(state, choiceId)` completes it.

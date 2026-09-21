@@ -1,21 +1,39 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/useTheme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { StatBar } from '../components/StatBar';
 import { LifeFeed } from '../components/LifeFeed';
+import { EventModal } from '../components/EventModal';
+import { RelationshipsScreen } from './RelationshipsScreen';
 import { useAppStore } from '../../state/store';
 
-const TAB_LABELS = ['Occupation', 'Assets', 'Relationships', 'Activities'];
+type SheetId = 'occupation' | 'assets' | 'relationships' | 'activities';
+
+const TABS: { id: SheetId; label: string }[] = [
+  { id: 'occupation', label: 'Occupation' },
+  { id: 'assets', label: 'Assets' },
+  { id: 'relationships', label: 'Relationships' },
+  { id: 'activities', label: 'Activities' },
+];
+
+const SHEET_TITLES: Record<SheetId, string> = {
+  occupation: 'Occupation',
+  assets: 'Assets',
+  relationships: 'Family',
+  activities: 'Activities',
+};
 
 export function MainFeedScreen() {
   const { colors } = useTheme();
   const game = useAppStore((s) => s.game);
   const ageUpYear = useAppStore((s) => s.ageUpYear);
+  const [openSheet, setOpenSheet] = useState<SheetId | null>(null);
 
   if (!game) return null;
   const { player } = game;
+  const hasPendingEvent = !!game.pendingEvent;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
@@ -43,25 +61,50 @@ export function MainFeedScreen() {
 
       <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <View style={styles.tabRow}>
-          {TAB_LABELS.slice(0, 2).map((label) => (
-            <PlaceholderTab key={label} label={label} />
+          {TABS.slice(0, 2).map((tab) => (
+            <TabButton key={tab.id} label={tab.label} onPress={() => setOpenSheet(tab.id)} />
           ))}
-          <PrimaryButton label="Age +1" onPress={ageUpYear} style={styles.ageButton} />
-          {TAB_LABELS.slice(2).map((label) => (
-            <PlaceholderTab key={label} label={label} />
+          <PrimaryButton
+            label="Age +1"
+            onPress={ageUpYear}
+            style={styles.ageButton}
+            disabled={hasPendingEvent}
+          />
+          {TABS.slice(2).map((tab) => (
+            <TabButton key={tab.id} label={tab.label} onPress={() => setOpenSheet(tab.id)} />
           ))}
         </View>
       </View>
+
+      <Modal visible={openSheet !== null} animationType="slide" onRequestClose={() => setOpenSheet(null)}>
+        <SafeAreaView style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <View style={styles.sheetHeader}>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{openSheet ? SHEET_TITLES[openSheet] : ''}</Text>
+            <Pressable onPress={() => setOpenSheet(null)} hitSlop={12}>
+              <Text style={[styles.closeButton, { color: colors.primary }]}>Close</Text>
+            </Pressable>
+          </View>
+          {openSheet === 'relationships' ? (
+            <RelationshipsScreen />
+          ) : (
+            <View style={styles.comingSoon}>
+              <Text style={[styles.comingSoonText, { color: colors.textMuted }]}>Coming in a future phase.</Text>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      <EventModal />
     </SafeAreaView>
   );
 }
 
-function PlaceholderTab({ label }: { label: string }) {
+function TabButton({ label, onPress }: { label: string; onPress: () => void }) {
   const { colors } = useTheme();
   return (
-    <View style={styles.tab}>
+    <Pressable style={styles.tab} onPress={onPress} hitSlop={8}>
       <Text style={[styles.tabLabel, { color: colors.textMuted }]}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -97,5 +140,33 @@ const styles = StyleSheet.create({
   },
   ageButton: {
     marginHorizontal: 8,
+  },
+  sheet: {
+    flex: 1,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  closeButton: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  comingSoon: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  comingSoonText: {
+    fontSize: 15,
   },
 });

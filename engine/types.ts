@@ -86,24 +86,72 @@ export interface FeedEntry {
   kind: FeedEntryKind;
 }
 
+/** Stat/money/relationship/flag deltas a choice (or auto-resolved event) applies. */
+export interface EffectSpec {
+  happiness?: number;
+  health?: number;
+  smarts?: number;
+  looks?: number;
+  money?: number;
+  karma?: number;
+  /** Applied to the event's subject family member, if it has one. */
+  relationship?: number;
+  flags?: Record<string, boolean | number | string>;
+}
+
 export interface EventChoice {
   id: string;
   label: string;
-  effects?: Partial<{
-    happiness: number;
-    health: number;
-    smarts: number;
-    looks: number;
-    money: number;
-    karma: number;
-  }>;
+  effects?: EffectSpec;
   resultText?: string;
 }
 
+/** A family role an event can target; the engine picks a living matching member at roll time. */
+export type EventSubjectRole = 'mother' | 'father' | 'parent' | 'sibling' | 'any-family';
+
+/** The resolved, ready-to-render event stored on GameState.pendingEvent. */
 export interface GameEvent {
   id: string;
   text: string;
   choices: EventChoice[];
+  subjectId?: string;
+  subjectName?: string;
+  subjectRole?: RelationshipRole;
+}
+
+/** Declarative conditions gating when an event definition is eligible to roll. */
+export interface EventCondition {
+  minAge?: number;
+  maxAge?: number;
+  genders?: Gender[];
+  /** State flags that must equal the given value for the event to be eligible. */
+  requiredFlags?: Record<string, boolean | number | string>;
+  /** Family role the event needs a living instance of (e.g. events about a sibling). */
+  requiresSubject?: EventSubjectRole;
+}
+
+export interface EventChoiceDefinition {
+  id: string;
+  label: string;
+  effects?: EffectSpec;
+  resultText?: string;
+}
+
+/**
+ * Data-file shape for an event (see /data/events.ts). Pure data — no
+ * functions — so events can be authored as plain TS/JSON objects and stay
+ * easy to add to without touching engine code.
+ */
+export interface EventDefinition {
+  id: string;
+  category: string;
+  /** Probability [0,1] this event fires on a given year once it's eligible. */
+  probability: number;
+  /** Relative weight used to pick among the events that fired this year. */
+  weight: number;
+  text: string;
+  condition: EventCondition;
+  choices: EventChoiceDefinition[];
 }
 
 export interface Character {

@@ -1,10 +1,20 @@
 import { newGame } from '../engine/newGame';
-import { ageUp } from '../engine/ageUp';
+import { ageUp, resolveEventChoice } from '../engine/ageUp';
+import type { GameState } from '../engine/types';
+
+/** Plays out ageUp() plus, if it produced a pendingEvent, auto-picks the first choice. */
+function advanceYear(state: GameState): GameState {
+  const afterAgeUp = ageUp(state);
+  if (afterAgeUp.pendingEvent) {
+    return resolveEventChoice(afterAgeUp, afterAgeUp.pendingEvent.choices[0].id);
+  }
+  return afterAgeUp;
+}
 
 describe('ageUp', () => {
-  it('increments age by exactly one and yearsLived by one', () => {
+  it('increments age by exactly one and yearsLived by one, once any event choice resolves', () => {
     const state = newGame({ firstName: 'Riko' }, 1);
-    const next = ageUp(state);
+    const next = advanceYear(state);
     expect(next.player.age).toBe(state.player.age + 1);
     expect(next.yearsLived).toBe(state.yearsLived + 1);
   });
@@ -26,10 +36,23 @@ describe('ageUp', () => {
     expect(newEntries.every((e) => e.age === next.player.age)).toBe(true);
   });
 
+  it('leaves a pendingEvent unresolved until resolveEventChoice is called, then does not double-advance the year', () => {
+    const state = newGame({ firstName: 'Riko' }, 1);
+    const afterAgeUp = ageUp(state);
+    if (afterAgeUp.pendingEvent) {
+      expect(afterAgeUp.yearsLived).toBe(state.yearsLived);
+      // Calling ageUp again while a choice is pending must be a no-op.
+      expect(ageUp(afterAgeUp)).toBe(afterAgeUp);
+      const resolved = resolveEventChoice(afterAgeUp, afterAgeUp.pendingEvent.choices[0].id);
+      expect(resolved.pendingEvent).toBeUndefined();
+      expect(resolved.yearsLived).toBe(state.yearsLived + 1);
+    }
+  });
+
   it('keeps all stats within 0-100 after many years', () => {
     let state = newGame({ firstName: 'Riko' }, 3);
     for (let i = 0; i < 60 && state.isAlive; i++) {
-      state = ageUp(state);
+      state = advanceYear(state);
       for (const value of Object.values(state.player.stats)) {
         expect(value).toBeGreaterThanOrEqual(0);
         expect(value).toBeLessThanOrEqual(100);
@@ -40,7 +63,7 @@ describe('ageUp', () => {
   it('is a no-op once the character has died', () => {
     let state = newGame({ firstName: 'Riko' }, 4);
     for (let i = 0; i < 200 && state.isAlive; i++) {
-      state = ageUp(state);
+      state = advanceYear(state);
     }
     expect(state.isAlive).toBe(false);
     const afterDeath = ageUp(state);
@@ -51,7 +74,7 @@ describe('ageUp', () => {
     let state = newGame({ firstName: 'Riko' }, 5);
     let years = 0;
     while (state.isAlive && years < 500) {
-      state = ageUp(state);
+      state = advanceYear(state);
       years++;
     }
     expect(state.isAlive).toBe(false);
@@ -62,7 +85,7 @@ describe('ageUp', () => {
     const runOnce = (seed: number) => {
       let state = newGame({ firstName: 'Riko', lastName: 'Vale', gender: 'female' }, seed);
       for (let i = 0; i < 30; i++) {
-        state = ageUp(state);
+        state = advanceYear(state);
       }
       return state;
     };
