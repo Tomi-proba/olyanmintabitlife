@@ -3,6 +3,9 @@ import type { GameState } from '../engine/types';
 
 const SAVE_KEY = 'second-chance:save-v1';
 const ACHIEVEMENTS_KEY = 'second-chance:achievements-v1';
+const THEME_KEY = 'second-chance:theme-v1';
+
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 export async function saveGame(state: GameState): Promise<void> {
   try {
@@ -48,5 +51,24 @@ export async function saveUnlockedAchievements(ids: string[]): Promise<void> {
     await AsyncStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(ids));
   } catch (error) {
     console.warn('Failed to save achievements', error);
+  }
+}
+
+export async function loadThemePreference(): Promise<ThemePreference> {
+  try {
+    const raw = await AsyncStorage.getItem(THEME_KEY);
+    if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
+    return 'system';
+  } catch (error) {
+    console.warn('Failed to load theme preference', error);
+    return 'system';
+  }
+}
+
+export async function saveThemePreference(preference: ThemePreference): Promise<void> {
+  try {
+    await AsyncStorage.setItem(THEME_KEY, preference);
+  } catch (error) {
+    console.warn('Failed to save theme preference', error);
   }
 }

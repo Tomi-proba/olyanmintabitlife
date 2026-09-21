@@ -6,7 +6,7 @@ React Native, Expo, and TypeScript. All names, UI, and art are original.
 
 ## Status
 
-Phase 5 of 6 complete:
+All 6 phases complete:
 
 - **Phase 1** — project setup, character creation, the main life feed, the
   Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and a
@@ -39,9 +39,20 @@ Phase 5 of 6 complete:
   sentence, and prison fires you from your job and locks out most
   activities until you're released). Most activities are once-per-year;
   the Occupation and Assets screens now also reflect being in prison.
+- **Phase 6** — 26 achievements (Millionaire, Centenarian, Prison Escape,
+  Straight-A Student, and more) that persist across every life played on
+  the device, shown on a new Achievements screen off the title screen; the
+  event pool grew from 55 to 155 events, including new career/partner/
+  child/school-specific events made possible by extending the event
+  engine's conditions (`requiresJob`, `requiresPartner`, `requiresChildren`,
+  `requiresEnrolled`) and subject roles (`partner`, `child`, `any-person`);
+  a Settings screen with a Light/Dark/System theme override; an animated
+  fade-in for new life-feed entries; and an "Attempt Escape" option while
+  in prison (with its own achievement).
 
-Achievements, 150+ total events, and final polish land in Phase 6 — see the
-project's task list for the roadmap.
+The game is feature-complete per the original spec. Ideas for further
+polish: more achievements, deeper crime/health event chains, and native
+haptics tuning per platform.
 
 ## Requirements
 
@@ -82,7 +93,7 @@ deployed to Vercel as-is — no server/API routes needed.
    - Build command: `npx expo export --platform web`
    - Output directory: `dist`
    - `framework: null` (so Vercel doesn't try to auto-detect Next.js/etc.)
-4. Deploy. No environment variables are required for Phase 1.
+4. Deploy. No environment variables are required.
 
 To reproduce the exact same build locally before pushing:
 
@@ -106,21 +117,23 @@ npm test
 /engine     Pure TS game logic: types, seedable RNG, character creation,
             ageUp (the yearly tick), death rolls, life summary, the family
             system, the random-event engine, effect application, education,
-            careers, money, and assets. No UI imports — safe to unit test
-            in isolation.
-/data       Game content as data, not code: names, countries, events (55 at
-            launch), jobs (34), schools/majors, and a small asset shop.
-            Achievements data lands in Phase 6.
+            careers, money, assets, health, crime, lifestyle, and
+            achievements. No UI imports — safe to unit test in isolation.
+/data       Game content as data, not code: names, countries, events (155),
+            jobs (34), schools/majors, a small asset shop, and 26
+            achievements.
 /state      Zustand store (screen routing + current game) and AsyncStorage
             save/load (autosave after every year, "Continue" on the title
-            screen).
+            screen, plus separately-persisted all-time achievements and
+            theme preference).
 /ui
   /screens    Title, Character Create, Main Feed, Occupation (school/job
               board), Assets (bank + shop), Relationships (dating/partner/
-              kids/family), Activities (health/lifestyle/casino/crime), Life
-              Summary (Achievements/Settings screens land in Phase 6).
+              kids/family), Activities (health/lifestyle/casino/crime),
+              Achievements, Settings, Life Summary.
   /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed, EventModal.
-  /theme      Light/dark color palettes and the useTheme() hook.
+  /theme      Light/dark color palettes and the useTheme() hook (respects
+              the Settings screen's theme override).
 __tests__   Jest tests for the engine.
 ```
 
@@ -139,9 +152,14 @@ engine code changes needed. Example:
   condition: {
     minAge: 4,
     maxAge: 100,
-    // genders: ['female'],          // optional: restrict by player gender
+    // genders: ['female'],              // optional: restrict by player gender
     // requiredFlags: { hasPet: true },   // optional: state.flags must match
-    requiresSubject: 'parent',       // optional: 'mother' | 'father' | 'parent' | 'sibling' | 'any-family'
+    // requiresJob: true,                 // optional: player must have a job
+    // requiresNoJob: true,               // optional: player must be jobless
+    // requiresPartner: true,             // optional: player must have a living partner
+    // requiresChildren: true,            // optional: player must have a living child
+    // requiresEnrolled: true,            // optional: player must be in school/university
+    requiresSubject: 'parent',       // optional: 'mother' | 'father' | 'parent' | 'sibling' | 'any-family' | 'partner' | 'child' | 'any-person'
   },
   choices: [
     // 1 choice = the event auto-resolves as narration (no popup).
@@ -153,11 +171,12 @@ engine code changes needed. Example:
 
 Template tokens available in `text` and in a choice's `label`/`resultText`:
 `{name}` (the player's first name), `{subject}` (e.g. "your mother Elena",
-only when `requiresSubject` is set), `{subjectName}` (just their first
-name). A choice's `effects` can set any of `happiness`, `health`, `smarts`,
-`looks`, `money`, `karma` (all deltas), `relationship` (applied to the
-event's subject, if any), and `flags` (merged into `state.flags`, useful
-for gating later events or unlocking achievements).
+only when `requiresSubject` is set — this now also works for `partner` and
+`child`), `{subjectName}` (just their first name). A choice's `effects` can
+set any of `happiness`, `health`, `smarts`, `looks`, `money`, `karma` (all
+deltas), `relationship` (applied to the event's subject, if any), and
+`flags` (merged into `state.flags`, useful for gating later events or
+unlocking achievements).
 
 Every event in the pool is checked with its own `probability` each year it's
 eligible; if more than one "fires" the same year, `weight` breaks the tie
@@ -194,6 +213,28 @@ logic and `__tests__/career.test.ts` for its invariants.
 Majors and the compulsory school stages (age ranges, tuition, GPA
 requirements) live in `/data/schools.ts`, in the same "just add an object"
 style as events and jobs.
+
+## Adding new achievements
+
+Achievements live in `/data/achievements.ts` as plain objects with a `check`
+predicate over the current `GameState` — no engine changes needed:
+
+```ts
+{
+  id: 'millionaire',                              // must be unique
+  name: 'Millionaire',                            // shown on the Achievements screen
+  description: 'Amass $1,000,000 in the bank.',
+  check: (state) => state.player.money >= 1_000_000,
+}
+```
+
+Every achievement is checked once per year (see `engine/achievements.ts`,
+called from `ageUp`'s `finalizeYear`); the first year `check` returns true,
+it's added to `state.achievements` and a "Achievement unlocked" line is
+added to the feed. The Zustand store separately merges newly unlocked ids
+into an all-time list (`state/persistence.ts`'s
+`loadUnlockedAchievements`/`saveUnlockedAchievements`) so the Achievements
+screen shows everything you've ever unlocked, across every life.
 
 ## How the engine works
 
@@ -255,4 +296,12 @@ style as events and jobs.
 - `engine/ageUp.ts` also resets `state.activitiesUsedThisYear` at the start
   of every year (the store enforces the once-per-year limit on Activities
   screen actions) and, while `prisonYearsLeft > 0`, decrements it, docks
-  happiness, and releases the player at 0.
+  happiness, and releases the player at 0. `crime.ts`'s
+  `attemptPrisonEscape` offers a way out early (odds improve with Smarts),
+  setting the `prisonEscape` achievement flag on success or adding more
+  years to the sentence on failure.
+- `engine/achievements.ts` — `evaluateAchievements(state)` checks every
+  not-yet-unlocked `data/achievements.ts` entry's `check(state)` predicate;
+  called from `ageUp`'s shared `finalizeYear`, so achievements can unlock
+  the moment a year's events push a stat, job, or relationship over a
+  threshold, whether or not that year also ends in death.

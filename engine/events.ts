@@ -9,6 +9,7 @@ import type {
 } from './types';
 import type { Rng } from './rng';
 import { roleLabel } from './family';
+import { isEnrolled } from './education';
 
 export interface EventContext {
   age: number;
@@ -18,6 +19,10 @@ export interface EventContext {
   hasLivingFather: boolean;
   hasLivingSibling: boolean;
   hasAnyLivingFamily: boolean;
+  hasLivingPartner: boolean;
+  hasLivingChild: boolean;
+  hasJob: boolean;
+  isEnrolled: boolean;
 }
 
 export function buildEventContext(state: GameState): EventContext {
@@ -30,6 +35,10 @@ export function buildEventContext(state: GameState): EventContext {
     hasLivingFather: living.some((m) => m.role === 'father'),
     hasLivingSibling: living.some((m) => m.role === 'sibling'),
     hasAnyLivingFamily: living.length > 0,
+    hasLivingPartner: !!state.partner && state.partner.alive,
+    hasLivingChild: state.children.some((c) => c.alive),
+    hasJob: !!state.job,
+    isEnrolled: isEnrolled(state.education.stage),
   };
 }
 
@@ -46,6 +55,12 @@ function subjectAvailable(ctx: EventContext, requires: EventSubjectRole | undefi
       return ctx.hasLivingSibling;
     case 'any-family':
       return ctx.hasAnyLivingFamily;
+    case 'partner':
+      return ctx.hasLivingPartner;
+    case 'child':
+      return ctx.hasLivingChild;
+    case 'any-person':
+      return ctx.hasAnyLivingFamily || ctx.hasLivingPartner || ctx.hasLivingChild;
     default:
       return true;
   }
@@ -60,33 +75,45 @@ function conditionMatches(condition: EventCondition, ctx: EventContext): boolean
       if (ctx.flags[key] !== value) return false;
     }
   }
+  if (condition.requiresJob && !ctx.hasJob) return false;
+  if (condition.requiresNoJob && ctx.hasJob) return false;
+  if (condition.requiresChildren && !ctx.hasLivingChild) return false;
+  if (condition.requiresPartner && !ctx.hasLivingPartner) return false;
+  if (condition.requiresEnrolled && !ctx.isEnrolled) return false;
   if (!subjectAvailable(ctx, condition.requiresSubject)) return false;
   return true;
 }
 
-function pickSubject(rng: Rng, family: FamilyMember[], role: EventSubjectRole | undefined): FamilyMember | undefined {
-  if (!role) return undefined;
-  const living = family.filter((m) => m.alive);
-  let pool: FamilyMember[];
+function peoplePool(state: GameState, role: EventSubjectRole): FamilyMember[] {
+  const livingFamily = state.family.filter((m) => m.alive);
+  const livingPartner = state.partner && state.partner.alive ? [state.partner] : [];
+  const livingChildren = state.children.filter((c) => c.alive);
+
   switch (role) {
     case 'mother':
-      pool = living.filter((m) => m.role === 'mother');
-      break;
+      return livingFamily.filter((m) => m.role === 'mother');
     case 'father':
-      pool = living.filter((m) => m.role === 'father');
-      break;
+      return livingFamily.filter((m) => m.role === 'father');
     case 'parent':
-      pool = living.filter((m) => m.role === 'mother' || m.role === 'father');
-      break;
+      return livingFamily.filter((m) => m.role === 'mother' || m.role === 'father');
     case 'sibling':
-      pool = living.filter((m) => m.role === 'sibling');
-      break;
+      return livingFamily.filter((m) => m.role === 'sibling');
     case 'any-family':
-      pool = living;
-      break;
+      return livingFamily;
+    case 'partner':
+      return livingPartner;
+    case 'child':
+      return livingChildren;
+    case 'any-person':
+      return [...livingFamily, ...livingPartner, ...livingChildren];
     default:
-      pool = [];
+      return [];
   }
+}
+
+function pickSubject(rng: Rng, state: GameState, role: EventSubjectRole | undefined): FamilyMember | undefined {
+  if (!role) return undefined;
+  const pool = peoplePool(state, role);
   if (pool.length === 0) return undefined;
   return rng.pick(pool);
 }
@@ -111,7 +138,7 @@ export function rollEvent(
   if (candidates.length === 0) return null;
 
   const chosen = rng.weightedPick(candidates, (def) => def.weight);
-  const subject = pickSubject(rng, state.family, chosen.condition.requiresSubject);
+  const subject = pickSubject(rng, state, chosen.condition.requiresSubject);
 
   const vars: Record<string, string> = {
     name: state.player.firstName,

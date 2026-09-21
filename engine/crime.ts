@@ -24,6 +24,11 @@ function catchChanceFor(state: GameState, base: number): number {
   return Math.max(0.05, Math.min(0.9, base - smartsEdge));
 }
 
+function flagNumber(state: GameState, key: string): number {
+  const value = state.flags[key];
+  return typeof value === 'number' ? value : 0;
+}
+
 function applyArrestConsequences(state: GameState, rng: Rng, config: CrimeConfig): { state: GameState; feedText: string } {
   const stateAfterFiring = state.job ? { ...state, job: undefined } : state;
 
@@ -43,6 +48,7 @@ function applyArrestConsequences(state: GameState, rng: Rng, config: CrimeConfig
     state: {
       ...stateAfterFiring,
       prisonYearsLeft: (stateAfterFiring.prisonYearsLeft ?? 0) + years,
+      flags: { ...stateAfterFiring.flags, wasIncarcerated: true },
       player: {
         ...stateAfterFiring.player,
         stats: { ...stateAfterFiring.player.stats, happiness: Math.max(0, stateAfterFiring.player.stats.happiness - 15) },
@@ -143,10 +149,12 @@ export function gamble(state: GameState, amount: number): CrimeActionResult {
 
   const rng = new Rng(state.rngState);
   if (rng.chance(GAMBLE_WIN_CHANCE)) {
+    const biggestGambleWin = Math.max(flagNumber(state, 'biggestGambleWin'), amount);
     return {
       state: {
         ...state,
         rngState: rng.state,
+        flags: { ...state.flags, biggestGambleWin },
         player: {
           ...state.player,
           money: state.player.money + amount,
@@ -168,5 +176,41 @@ export function gamble(state: GameState, amount: number): CrimeActionResult {
       },
     },
     feedText: `You lost $${amount.toLocaleString()} at the casino.`,
+  };
+}
+
+const ESCAPE_BASE_CHANCE = 0.15;
+
+/** A risky once-a-year gambit while imprisoned: succeed and you're free (and get an achievement); fail and your sentence grows. */
+export function attemptPrisonEscape(state: GameState): CrimeActionResult {
+  if (!state.prisonYearsLeft || state.prisonYearsLeft <= 0) {
+    return { state, feedText: "You're not in prison." };
+  }
+
+  const rng = new Rng(state.rngState);
+  const smartsEdge = (state.player.stats.smarts - 50) / 500;
+  const chance = Math.max(0.05, Math.min(0.4, ESCAPE_BASE_CHANCE + smartsEdge));
+
+  if (rng.chance(chance)) {
+    return {
+      state: {
+        ...state,
+        rngState: rng.state,
+        prisonYearsLeft: undefined,
+        flags: { ...state.flags, prisonEscape: true },
+      },
+      feedText: 'You made a daring escape from prison!',
+    };
+  }
+
+  const extraYears = rng.int(1, 3);
+  return {
+    state: {
+      ...state,
+      rngState: rng.state,
+      prisonYearsLeft: state.prisonYearsLeft + extraYears,
+      player: { ...state.player, stats: { ...state.player.stats, happiness: Math.max(0, state.player.stats.happiness - 10) } },
+    },
+    feedText: `Your escape attempt failed. ${extraYears} more year${extraYears === 1 ? '' : 's'} added to your sentence.`,
   };
 }

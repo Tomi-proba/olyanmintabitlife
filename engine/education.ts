@@ -126,7 +126,7 @@ export function applyYearlyEducationUpdate(state: GameState, rng: Rng): { state:
       feedTexts.push(`${state.player.firstName} started ${stageDef.label}.`);
     } else if (!stageDef && education.stage === 'high') {
       const passed = education.gpa >= 1.0;
-      flags = { ...flags, highSchoolDiploma: passed };
+      flags = { ...flags, highSchoolDiploma: passed, highSchoolDropout: !passed };
       education = { ...education, stage: 'graduated' };
       feedTexts.push(
         passed

@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, FlatList, StyleSheet, Text, View } from 'react-native';
 import type { FeedEntry } from '../../engine/types';
 import { useTheme } from '../theme/useTheme';
 
@@ -20,6 +20,31 @@ function toRows(entries: FeedEntry[]): Row[] {
     rows.push({ kind: 'entry', entry, key: entry.id });
   }
   return rows;
+}
+
+function FeedEntryRow({ entry }: { entry: FeedEntry }) {
+  const { colors } = useTheme();
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 280, useNativeDriver: true }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.entry,
+        { backgroundColor: colors.surface, borderColor: colors.border, opacity, transform: [{ translateY }] },
+      ]}
+    >
+      <Text style={[styles.entryText, { color: colors.text }]}>{entry.text}</Text>
+    </Animated.View>
+  );
 }
 
 export function LifeFeed({ entries }: LifeFeedProps) {
@@ -44,11 +69,7 @@ export function LifeFeed({ entries }: LifeFeedProps) {
             </View>
           );
         }
-        return (
-          <View style={[styles.entry, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.entryText, { color: colors.text }]}>{item.entry.text}</Text>
-          </View>
-        );
+        return <FeedEntryRow entry={item.entry} />;
       }}
     />
   );

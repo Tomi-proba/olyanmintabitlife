@@ -16,6 +16,7 @@ export * from './money';
 export * from './health';
 export * from './crime';
 export * from './lifestyle';
+export * from './achievements';
 export * from './ageUp';
 export * from './newGame';
 export * from './lifeSummary';

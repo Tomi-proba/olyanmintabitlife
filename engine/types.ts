@@ -119,8 +119,8 @@ export interface EventChoice {
   resultText?: string;
 }
 
-/** A family role an event can target; the engine picks a living matching member at roll time. */
-export type EventSubjectRole = 'mother' | 'father' | 'parent' | 'sibling' | 'any-family';
+/** A role an event can target; the engine picks a living matching person at roll time. */
+export type EventSubjectRole = 'mother' | 'father' | 'parent' | 'sibling' | 'any-family' | 'partner' | 'child' | 'any-person';
 
 /** The resolved, ready-to-render event stored on GameState.pendingEvent. */
 export interface GameEvent {
@@ -141,6 +141,16 @@ export interface EventCondition {
   requiredFlags?: Record<string, boolean | number | string>;
   /** Family role the event needs a living instance of (e.g. events about a sibling). */
   requiresSubject?: EventSubjectRole;
+  /** The player must currently have a job. */
+  requiresJob?: boolean;
+  /** The player must currently be jobless. */
+  requiresNoJob?: boolean;
+  /** The player must have at least one living child. */
+  requiresChildren?: boolean;
+  /** The player must have a living partner. */
+  requiresPartner?: boolean;
+  /** The player must currently be enrolled in school/university. */
+  requiresEnrolled?: boolean;
 }
 
 export interface EventChoiceDefinition {

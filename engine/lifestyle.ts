@@ -10,6 +10,11 @@ function clampStat(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function flagNumber(state: GameState, key: string): number {
+  const value = state.flags[key];
+  return typeof value === 'number' ? value : 0;
+}
+
 const VACATION_COST = 500;
 const SHOPPING_COST = 150;
 
@@ -20,10 +25,12 @@ export function goOnVacation(state: GameState): LifestyleActionResult {
   const rng = new Rng(state.rngState);
   const happiness = clampStat(state.player.stats.happiness + rng.int(10, 20));
   const health = clampStat(state.player.stats.health + rng.int(2, 6));
+  const flags = { ...state.flags, vacationsTaken: flagNumber(state, 'vacationsTaken') + 1 };
   return {
     state: {
       ...state,
       rngState: rng.state,
+      flags,
       player: { ...state.player, money: state.player.money - VACATION_COST, stats: { ...state.player.stats, happiness, health } },
     },
     feedText: 'You went on a relaxing vacation.',

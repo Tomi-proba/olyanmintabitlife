@@ -8,6 +8,7 @@ import { applyEffects } from './effects';
 import { applyYearlyEducationUpdate } from './education';
 import { applyYearlyJobDrift } from './career';
 import { applyYearlyFinances } from './money';
+import { evaluateAchievements } from './achievements';
 import { EVENTS } from '../data/events';
 
 function clampStat(value: number): number {
@@ -89,9 +90,14 @@ function fillTemplate(template: string, name: string, age: number): string {
 
 /** Rolls the death check for the current year and, if it fires, finalizes the life. */
 function finalizeYear(state: GameState, rng: Rng, yearFeed: FeedEntry[]): GameState {
-  const death = rollDeath(rng, state.player.age, state.player.stats.health);
   const feed = [...yearFeed];
 
+  const { state: withAchievements, newlyUnlocked } = evaluateAchievements(state);
+  for (const achievement of newlyUnlocked) {
+    feed.push(makeFeedEntry(rng, state.player.age, state.yearsLived + 1, `Achievement unlocked: ${achievement.name}!`, 'system'));
+  }
+
+  const death = rollDeath(rng, state.player.age, state.player.stats.health);
   if (death.died) {
     feed.push(
       makeFeedEntry(
@@ -105,7 +111,7 @@ function finalizeYear(state: GameState, rng: Rng, yearFeed: FeedEntry[]): GameSt
   }
 
   return {
-    ...state,
+    ...withAchievements,
     rngState: rng.state,
     yearsLived: state.yearsLived + 1,
     feed: [...state.feed, ...feed],

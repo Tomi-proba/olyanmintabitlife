@@ -48,11 +48,17 @@ export function visitDoctor(state: GameState): HealthActionResult {
   };
 }
 
+function flagNumber(state: GameState, key: string): number {
+  const value = state.flags[key];
+  return typeof value === 'number' ? value : 0;
+}
+
 export function goToGym(state: GameState): HealthActionResult {
   const rng = new Rng(state.rngState);
   const stats = adjustStats(state, { health: rng.int(3, 8), looks: rng.int(1, 4), happiness: rng.int(1, 4) });
+  const flags = { ...state.flags, gymVisits: flagNumber(state, 'gymVisits') + 1 };
   return {
-    state: { ...state, rngState: rng.state, player: { ...state.player, stats } },
+    state: { ...state, rngState: rng.state, flags, player: { ...state.player, stats } },
     feedText: 'You had a great workout at the gym.',
   };
 }

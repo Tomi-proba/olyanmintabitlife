@@ -8,6 +8,8 @@ import { TitleScreen } from './ui/screens/TitleScreen';
 import { CharacterCreateScreen } from './ui/screens/CharacterCreateScreen';
 import { MainFeedScreen } from './ui/screens/MainFeedScreen';
 import { LifeSummaryScreen } from './ui/screens/LifeSummaryScreen';
+import { AchievementsScreen } from './ui/screens/AchievementsScreen';
+import { SettingsScreen } from './ui/screens/SettingsScreen';
 
 function Router() {
   const screen = useAppStore((s) => s.screen);
@@ -33,6 +35,8 @@ function Router() {
       {screen === 'create' && <CharacterCreateScreen />}
       {screen === 'playing' && <MainFeedScreen />}
       {screen === 'summary' && <LifeSummaryScreen />}
+      {screen === 'achievements' && <AchievementsScreen />}
+      {screen === 'settings' && <SettingsScreen />}
     </View>
   );
 }

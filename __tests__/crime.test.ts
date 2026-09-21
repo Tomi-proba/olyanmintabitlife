@@ -1,5 +1,5 @@
 import { newGame } from '../engine/newGame';
-import { pettyTheft, robbery, dealDrugs, gamble } from '../engine/crime';
+import { pettyTheft, robbery, dealDrugs, gamble, attemptPrisonEscape } from '../engine/crime';
 import type { GameState } from '../engine/types';
 
 function baseState(seed: number) {
@@ -57,5 +57,25 @@ describe('gamble', () => {
     const result = gamble(state, 100);
     const diff = result.state.player.money - state.player.money;
     expect(Math.abs(diff)).toBe(100);
+  });
+});
+
+describe('attemptPrisonEscape', () => {
+  it('refuses when not in prison', () => {
+    const state = baseState(6);
+    const result = attemptPrisonEscape(state);
+    expect(result.state).toBe(state);
+  });
+
+  it('either frees the player (with the achievement flag) or adds years to the sentence', () => {
+    for (let seed = 1; seed < 50; seed++) {
+      const state = { ...baseState(seed), prisonYearsLeft: 3 };
+      const result = attemptPrisonEscape(state);
+      if (result.state.prisonYearsLeft === undefined) {
+        expect(result.state.flags.prisonEscape).toBe(true);
+      } else {
+        expect(result.state.prisonYearsLeft).toBeGreaterThan(3);
+      }
+    }
   });
 });

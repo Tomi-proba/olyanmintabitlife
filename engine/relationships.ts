@@ -93,11 +93,12 @@ export function proposeMarriage(state: GameState): RelationshipActionResult {
   const chance = Math.max(0.1, Math.min(0.95, state.partner.relationship / 100));
 
   if (rng.chance(chance)) {
+    const marriageCount = (typeof state.flags.marriageCount === 'number' ? state.flags.marriageCount : 0) + 1;
     return {
       state: {
         ...state,
         rngState: rng.state,
-        flags: { ...state.flags, married: true, dating: true },
+        flags: { ...state.flags, married: true, dating: true, marriageCount },
         partner: { ...state.partner, relationship: Math.min(100, state.partner.relationship + 10) },
         player: { ...state.player, stats: { ...state.player.stats, happiness: Math.min(100, state.player.stats.happiness + 15) } },
       },

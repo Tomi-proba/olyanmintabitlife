@@ -11,6 +11,8 @@ export function TitleScreen() {
   const game = useAppStore((s) => s.game);
   const continueGame = useAppStore((s) => s.continueGame);
   const goToCreate = useAppStore((s) => s.goToCreate);
+  const goToAchievements = useAppStore((s) => s.goToAchievements);
+  const goToSettings = useAppStore((s) => s.goToSettings);
 
   const canContinue = hasSave && !!game;
 
@@ -32,6 +34,8 @@ export function TitleScreen() {
           variant={canContinue ? 'secondary' : 'primary'}
           style={styles.button}
         />
+        <PrimaryButton label="Achievements" variant="secondary" onPress={goToAchievements} style={styles.button} />
+        <PrimaryButton label="Settings" variant="secondary" onPress={goToSettings} style={styles.button} />
       </View>
     </SafeAreaView>
   );

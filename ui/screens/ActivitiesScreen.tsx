@@ -56,6 +56,7 @@ export function ActivitiesScreen() {
   const gamble = useAppStore((s) => s.gamble);
   const study = useAppStore((s) => s.study);
   const browseDatingApp = useAppStore((s) => s.browseDatingApp);
+  const attemptPrisonEscape = useAppStore((s) => s.attemptPrisonEscape);
   const [betAmount, setBetAmount] = useState('50');
 
   if (!game) return null;
@@ -73,6 +74,13 @@ export function ActivitiesScreen() {
             {' '}
             {game.prisonYearsLeft} year{game.prisonYearsLeft === 1 ? '' : 's'} left.
           </Text>
+          <PrimaryButton
+            label={used('prisonEscape') ? 'Already Tried This Year' : 'Attempt Escape'}
+            variant="danger"
+            onPress={attemptPrisonEscape}
+            disabled={used('prisonEscape')}
+            style={styles.fullButton}
+          />
         </Card>
       </ScrollView>
     );
