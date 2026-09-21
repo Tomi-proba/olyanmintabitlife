@@ -6,7 +6,7 @@ React Native, Expo, and TypeScript. All names, UI, and art are original.
 
 ## Status
 
-Phase 2 of 6 complete:
+Phase 3 of 6 complete:
 
 - **Phase 1** — project setup, character creation, the main life feed, the
   Age +1 loop, core stats (Happiness/Health/Smarts/Looks), death and a
@@ -18,10 +18,17 @@ Phase 2 of 6 complete:
   Relationships tab you can Spend Time, give a Gift, Argue, or Ask for
   Money. Events can present a 2-4 choice decision modal, or auto-resolve as
   pure narration.
+- **Phase 3** — school (preschool → high school, GPA, Study/Skip, detention),
+  optional university (10 majors, tuition/loans, 4-year program), the career
+  system (34 jobs across 4 tiers, a Job Board, interviews, Work Hard,
+  promotions, getting fired, quitting, retiring at 55+), and money (salary,
+  progressive tax, cost of living, debt interest, asset upkeep, and a small
+  shop for property/cars/stocks/crypto with random yearly investment
+  returns). All of it lives behind the Occupation and Assets tabs.
 
-Schools, careers, money, relationships beyond family (dating/marriage/kids),
-health, crime, and achievements land in later phases — see the project's
-task list for the roadmap.
+Relationships beyond family (dating/marriage/kids), health activities,
+crime, and achievements land in later phases — see the project's task list
+for the roadmap.
 
 ## Requirements
 
@@ -85,18 +92,20 @@ npm test
 ```
 /engine     Pure TS game logic: types, seedable RNG, character creation,
             ageUp (the yearly tick), death rolls, life summary, the family
-            system, the random-event engine, and effect application. No UI
-            imports — safe to unit test in isolation.
+            system, the random-event engine, effect application, education,
+            careers, money, and assets. No UI imports — safe to unit test
+            in isolation.
 /data       Game content as data, not code: names, countries, events (55 at
-            launch). Jobs, schools, and achievements data files are added
-            in later phases.
+            launch), jobs (34), schools/majors, and a small asset shop.
+            Achievements data lands in Phase 6.
 /state      Zustand store (screen routing + current game) and AsyncStorage
             save/load (autosave after every year, "Continue" on the title
             screen).
 /ui
-  /screens    Title, Character Create, Main Feed, Relationships (family),
-              Life Summary (more are added in later phases: Occupation,
-              Assets, Activities, Achievements, Settings).
+  /screens    Title, Character Create, Main Feed, Occupation (school/job
+              board), Assets (bank + shop), Relationships (family), Life
+              Summary (Activities and Achievements/Settings screens land in
+              later phases).
   /components Reusable UI: StatBar, PrimaryButton, Card, LifeFeed, EventModal.
   /theme      Light/dark color palettes and the useTheme() hook.
 __tests__   Jest tests for the engine.
@@ -144,10 +153,34 @@ and one event is shown. See `engine/events.ts` for the selection logic and
 
 ## Adding new jobs
 
-*(The career system ships in Phase 3. Once `/data/jobs.ts` exists, new jobs
-are added there as plain data objects — no engine code changes needed. This
-section will be filled in with the exact schema and examples at that
-point.)*
+Jobs live in `/data/jobs.ts` as plain `JobDefinition` objects — no engine
+code changes needed. Example:
+
+```ts
+{
+  id: 'software_engineer',            // must be unique
+  field: 'Technology',                // freeform grouping label, shown in the job board
+  tier: 3,                            // 1 entry/part-time, 2 skilled, 3 professional, 4 executive
+  titles: ['Junior Software Engineer', 'Software Engineer', 'Senior Software Engineer'], // level 1/2/3 titles
+  minAge: 21,
+  partTime: false,                    // part-time jobs only ever show up for teens (14-18)
+  minEducation: 'bachelor',           // 'none' | 'highschool' | 'bachelor'
+  minSmarts: 70,                      // minimum Smarts stat required
+  baseSalary: 75000,                  // annual salary at level 1
+}
+```
+
+Applying rolls an interview (odds improve with Smarts above the job's
+minimum, Looks, and Karma). Once hired, Work Hard raises performance and can
+trigger a promotion (next title in `titles`, salary × 1.35); coasting decays
+performance and risks getting fired. See `engine/career.ts` for the full
+logic and `__tests__/career.test.ts` for its invariants.
+
+## Adding new majors or school stages
+
+Majors and the compulsory school stages (age ranges, tuition, GPA
+requirements) live in `/data/schools.ts`, in the same "just add an object"
+style as events and jobs.
 
 ## How the engine works
 
@@ -175,3 +208,16 @@ point.)*
   and never mutates its input. If the year's event needs a player decision,
   the year is left unfinished (age/stats/family already advanced, but no
   death roll yet) until `resolveEventChoice(state, choiceId)` completes it.
+- `engine/education.ts` — moves the player through the compulsory school
+  stages by age, applies GPA drift from the Study/Skip choice, handles
+  graduation (sets the `highSchoolDiploma`/`bachelorDegree` flags jobs check
+  against), and optional university enrollment with a chosen major.
+- `engine/career.ts` — the job board, applying (an interview roll weighted
+  by Smarts/Looks/Karma), Work Hard (performance → promotions), quitting,
+  retiring (55+), and the yearly passive performance decay/fire-risk roll.
+- `engine/money.ts` — yearly salary, progressive income tax (part-time teen
+  jobs are exempt), asset upkeep, cost of living for adults, and interest on
+  debt (a negative bank balance).
+- `engine/assets.ts` — buying/selling property, cars, stocks, and crypto,
+  plus each asset's yearly value change (stocks/crypto swing widely;
+  property appreciates slowly; cars depreciate).

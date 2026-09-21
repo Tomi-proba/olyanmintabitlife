@@ -7,6 +7,8 @@ import { StatBar } from '../components/StatBar';
 import { LifeFeed } from '../components/LifeFeed';
 import { EventModal } from '../components/EventModal';
 import { RelationshipsScreen } from './RelationshipsScreen';
+import { OccupationScreen } from './OccupationScreen';
+import { AssetsScreen } from './AssetsScreen';
 import { useAppStore } from '../../state/store';
 
 type SheetId = 'occupation' | 'assets' | 'relationships' | 'activities';
@@ -84,9 +86,10 @@ export function MainFeedScreen() {
               <Text style={[styles.closeButton, { color: colors.primary }]}>Close</Text>
             </Pressable>
           </View>
-          {openSheet === 'relationships' ? (
-            <RelationshipsScreen />
-          ) : (
+          {openSheet === 'relationships' && <RelationshipsScreen />}
+          {openSheet === 'occupation' && <OccupationScreen />}
+          {openSheet === 'assets' && <AssetsScreen />}
+          {openSheet === 'activities' && (
             <View style={styles.comingSoon}>
               <Text style={[styles.comingSoonText, { color: colors.textMuted }]}>Coming in a future phase.</Text>
             </View>

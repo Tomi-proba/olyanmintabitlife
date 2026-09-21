@@ -17,7 +17,7 @@ export function newGame(options: CharacterCreateOptions = {}, seed: number = cre
     player,
     family,
     children: [],
-    education: { stage: 'none', grade: 0, gpa: 0 },
+    education: { stage: 'none', grade: 0, gpa: 3.0 },
     assets: [],
     achievements: [],
     feed: [

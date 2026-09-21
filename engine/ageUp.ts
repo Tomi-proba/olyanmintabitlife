@@ -5,6 +5,9 @@ import { rollDeath } from './death';
 import { ageFamily } from './family';
 import { rollEvent } from './events';
 import { applyEffects } from './effects';
+import { applyYearlyEducationUpdate } from './education';
+import { applyYearlyJobDrift } from './career';
+import { applyYearlyFinances } from './money';
 import { EVENTS } from '../data/events';
 
 function clampStat(value: number): number {
@@ -160,6 +163,24 @@ export function ageUp(state: GameState): GameState {
     player: { ...state.player, age: nextAge, stats: newStats },
     family: agedFamily,
   };
+
+  const educationResult = applyYearlyEducationUpdate(working, rng);
+  working = educationResult.state;
+  for (const text of educationResult.feedTexts) {
+    feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, text, 'system'));
+  }
+
+  const jobDrift = applyYearlyJobDrift(working, rng);
+  working = jobDrift.state;
+  for (const text of jobDrift.feedTexts) {
+    feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, text, 'system'));
+  }
+
+  const financeResult = applyYearlyFinances(working, rng);
+  working = financeResult.state;
+  for (const text of financeResult.feedTexts) {
+    feed.push(makeFeedEntry(rng, nextAge, state.yearsLived + 1, text));
+  }
 
   const event = rollEvent(rng, EVENTS, working);
   if (event) {

@@ -45,27 +45,38 @@ export interface FamilyMember {
 }
 
 export interface Job {
-  id: string;
+  /** References a JobDefinition.id in /data/jobs.ts. */
+  jobId: string;
   title: string;
+  field: string;
   tier: number;
+  /** 1-3: entry/mid/senior within this job; promotions raise this and salary/title. */
+  level: 1 | 2 | 3;
   salary: number;
   yearsWorked: number;
   performance: number; // 0-100
+  partTime: boolean;
 }
 
+export type EducationStage =
+  | 'none'
+  | 'preschool'
+  | 'elementary'
+  | 'middle'
+  | 'high'
+  | 'university'
+  | 'graduated';
+
 export interface EducationState {
-  stage:
-    | 'none'
-    | 'preschool'
-    | 'elementary'
-    | 'middle'
-    | 'high'
-    | 'university'
-    | 'graduated';
+  stage: EducationStage;
   grade: number;
   gpa: number; // 0-4
   major?: string;
   expelled?: boolean;
+  /** Studied (true) or skipped (false) this year; reset each year by ageUp. */
+  studiedThisYear?: boolean;
+  /** Years completed so far, only while stage === 'university'. */
+  universityYear?: number;
 }
 
 export interface Asset {
@@ -74,6 +85,8 @@ export interface Asset {
   name: string;
   value: number;
   upkeepPerYear: number;
+  /** Purchase price, used to report gain/loss; irrelevant for property/car upkeep math. */
+  costBasis: number;
 }
 
 export type FeedEntryKind = 'narration' | 'choice' | 'stat' | 'system';
