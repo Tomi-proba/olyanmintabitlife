@@ -1,0 +1,281 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.app-header {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #e1e6eb;
+  background: #ffffff;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.app-header p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7785;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-panel {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid #e1e6eb;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.app-split {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.split-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.split-pane-2d {
+  border-right: 1px solid #e1e6eb;
+}
+
+@media (max-width: 860px) {
+  .app-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .app-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e1e6eb;
+    max-height: 40vh;
+  }
+  .app-split {
+    flex-direction: column;
+    min-height: 60vh;
+  }
+  .split-pane-2d {
+    border-right: none;
+    border-bottom: 1px solid #e1e6eb;
+  }
+}
+
+.sketch-canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  background: #fbfcfe;
+}
+
+.preview-3d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #15181d;
+}
+
+.preview-3d-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #8e99a6;
+  font-size: 0.9rem;
+  z-index: 1;
+}
+
+.panel-section h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #4a5568;
+  margin: 1.1rem 0 0.5rem;
+}
+
+.panel-section h2:first-child {
+  margin-top: 0;
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: #7a8694;
+  margin: 0.25rem 0 0.6rem;
+}
+
+.primary-button {
+  width: 100%;
+  padding: 0.6rem;
+  background: #2f6fed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  background: #b9c6e0;
+  cursor: not-allowed;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.toolbar-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.toolbar-row button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  border: 1px solid #d6dde3;
+  background: #f5f7f9;
+  cursor: pointer;
+}
+
+.toolbar-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.param-slider {
+  display: block;
+  margin-bottom: 0.65rem;
+}
+
+.param-slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #4a5568;
+  margin-bottom: 0.2rem;
+}
+
+.param-slider-value {
+  font-weight: 600;
+  color: #2f6fed;
+}
+
+.param-slider input[type='range'] {
+  width: 100%;
+}
+
+.measurement-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.numeric-input {
+  display: block;
+  font-size: 0.78rem;
+  color: #4a5568;
+}
+
+.numeric-input-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d6dde3;
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.numeric-input-row input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.numeric-input-row .unit {
+  color: #9aa6b2;
+  font-size: 0.75rem;
+}
+
+.preset-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.preset-button {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #d6dde3;
+  background: #f5f7f9;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.warnings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.warning {
+  font-size: 0.78rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+}
+
+.warning-warning {
+  background: #fff6e0;
+  color: #8a6d1d;
+}
+
+.warning-error {
+  background: #fde6e6;
+  color: #a12a2a;
+}
+
+.warnings-ok {
+  font-size: 0.78rem;
+  color: #2e8b57;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.export-buttons button {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #d6dde3;
+  background: #f5f7f9;
+  font-size: 0.78rem;
+  cursor: pointer;
+}

@@ -4,6 +4,12 @@ A mobile life-simulation game, in the spirit of BitLife: live an entire life
 one year at a time, making choices that shape your character. Built with
 React Native, Expo, and TypeScript. All names, UI, and art are original.
 
+> This repository also contains a second, independent app:
+> **[Frame Studio](./frame-editor/)** — a sketch-to-3D eyewear frame editor
+> (draw a lens outline, clean it up, edit it like a vector tool, and watch
+> a live 3D model build itself). It has its own `package.json`/dev server
+> in `/frame-editor`; see that folder's README for setup.
+
 ## Status
 
 All 6 phases complete:

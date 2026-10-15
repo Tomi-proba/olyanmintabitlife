@@ -36,7 +36,8 @@
     "preset": "jest-expo",
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/.expo/"
+      "/.expo/",
+      "/frame-editor/"
     ]
   }
 }
